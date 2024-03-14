@@ -1,81 +1,69 @@
 import React, { useState, useEffect } from 'react';
 
 function App() {
-  const [table1Data, setTable1Data] = useState([]);
+  const [csvData, setCsvData] = useState([]);
+  const [table2Data, setTable2Data] = useState([]);
 
   useEffect(() => {
-    // Fetch Table 1 data
     async function fetchData() {
       try {
-        const response = await fetch('/Table_Input.csv');
-        const csvData = await response.text();
-        const parsedData = csvData.split('\n').map(row => row.split(','));
-        setTable1Data(parsedData);
+        const response = await fetch('/Table_Input.csv'); // Adjust the path to your CSV file
+        const text = await response.text();
+        const rows = text.split('\n').map(row => row.split(','));
+        setCsvData(rows);
       } catch (error) {
-        console.error('Error fetching Table 1 data:', error);
+        console.error('Error fetching CSV data:', error);
       }
     }
     fetchData();
   }, []);
 
-  // Calculate results for Table 2
-  const calculateResult = (expression) => {
-    let result = null;
-    try {
-      const evaluated = eval(expression.replace(/([A-Z]\d+)/g, (match, index) => {
-        const value = table1Data.find(row => row[0] === index);
-        return value ? parseFloat(value[1]) : match;
-      }));
-      result = isNaN(evaluated) ? null : evaluated;
-    } catch (error) {
-      console.error('Error evaluating expression:', error);
+  useEffect(() => {
+    if (csvData.length > 0) {
+      const table2 = [
+        ['Category', 'Value'],
+        ['Alpha', getValue('A5') + getValue('A20')],
+        ['Beta', getValue('A15') / getValue('A7')],
+        ['Charlie', getValue('A13') * getValue('A12')],
+      ];
+      setTable2Data(table2);
     }
-    return result;
-  };
+  }, [csvData]);
 
-  // Table 2 data
-  const table2Data = [
-    { category: 'Alpha', expression: 'A5 + A20' },
-    { category: 'Beta', expression: 'A15 / A7' },
-    { category: 'Charlie', expression: 'A13 * A12' }
-  ].map(row => ({
-    category: row.category,
-    value: calculateResult(row.expression)
-  }));
+  const getValue = index => {
+    const row = csvData.find(row => row[0] === index);
+    return row ? parseFloat(row[1]) : 0;
+  };
 
   return (
     <div>
       <h1>Table 1</h1>
       <table>
-        <thead>
-          <tr>
-            <th>Index</th>
-            <th>Value</th>
-          </tr>
-        </thead>
         <tbody>
-          {table1Data.map((row, index) => (
-            <tr key={index}>
-              <td>{row[0]}</td>
-              <td>{row[1]}</td>
+          {csvData.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {row.map((cell, cellIndex) => (
+                <td key={cellIndex}>{cell}</td>
+              ))}
             </tr>
           ))}
         </tbody>
       </table>
-      
       <h1>Table 2</h1>
       <table>
         <thead>
           <tr>
-            <th>Category</th>
-            <th>Value</th>
+            {table2Data.length > 0 && table2Data[0].map((cell, index) => (
+              <th key={index}>{cell}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {table2Data.map((row, index) => (
-            <tr key={index}>
-              <td>{row.category}</td>
-              <td>{row.value}</td>
+          {table2Data.slice(1).map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {row.map((cell, cellIndex) => (
+                <td key={cellIndex}>{cell}</td>
+              ))}
             </tr>
           ))}
         </tbody>
